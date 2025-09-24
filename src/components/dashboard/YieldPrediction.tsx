@@ -12,6 +12,7 @@ import {
   RefreshCw,
   BarChart3
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FarmData {
   farmArea: number;
@@ -118,7 +119,7 @@ export default function YieldPrediction() {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const newFarmData = generateFarmData();
-    const prediction = predictYield(newFarmData);
+    const prediction = await predictYield(newFarmData);
     
     setFarmData(newFarmData);
     setYieldPrediction(prediction);

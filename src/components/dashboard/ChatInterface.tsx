@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Bot, User, Loader2, Sprout } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import smartRootsLogo from "@/assets/smartroots-logo.jpg";
 
 interface Message {
@@ -36,52 +37,22 @@ export default function ChatInterface() {
     }
   }, [messages]);
 
-  // Mock AI responses - In real app, this would connect to your AI service
+  // AI response using Gemini API via Supabase Edge Function
   const getAIResponse = async (userMessage: string): Promise<string> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: { message: userMessage }
+      });
 
-    const responses = {
-      crop: [
-        "Based on your current soil conditions with pH 6.5 and good NPK levels, I recommend planting wheat or maize. The temperature and humidity are optimal for these crops.",
-        "For the current season, consider rice cultivation if you have good water supply, or opt for drought-resistant crops like millet if water is limited.",
-        "Your soil analysis shows high nitrogen content, which is perfect for leafy vegetables like spinach and lettuce."
-      ],
-      pest: [
-        "For pest management, I recommend integrated pest management (IPM). Use neem oil spray for aphids and introduce beneficial insects like ladybugs.",
-        "Early detection is key! Check your plants regularly for signs of pest damage. Yellow sticky traps can help monitor flying pests.",
-        "Crop rotation is an excellent natural pest control method. Avoid planting the same crop family in the same area consecutively."
-      ],
-      fertilizer: [
-        "Based on your soil NPK readings, I recommend a balanced 10-10-10 fertilizer. Apply 2-3 kg per acre during the growing season.",
-        "Your phosphorus levels are low. Consider applying DAP (Diammonium Phosphate) fertilizer to boost root development.",
-        "Organic compost is always beneficial. Mix it with your soil before planting to improve soil structure and nutrient retention."
-      ],
-      weather: [
-        "The upcoming weather looks favorable for farming. Light rainfall expected in 2-3 days, perfect for recently planted crops.",
-        "High humidity levels may increase fungal disease risk. Ensure good air circulation around your plants.",
-        "Temperature fluctuations can stress plants. Consider mulching to regulate soil temperature."
-      ],
-      default: [
-        "That's an interesting question! For agricultural advice, I analyze your specific farm conditions including soil health, weather patterns, and crop requirements.",
-        "I can help you with crop selection, pest management, fertilizer recommendations, and farming best practices. What specific aspect would you like to explore?",
-        "Agricultural success depends on many factors. Let me help you optimize your farming practices based on current conditions and scientific research.",
-        "Great question! For the most accurate advice, I consider your local climate, soil conditions, and sustainable farming practices."
-      ]
-    };
+      if (error) {
+        console.error('Error calling AI chat function:', error);
+        return "I'm having trouble processing your request. Please try again later.";
+      }
 
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes('crop') || lowerMessage.includes('plant') || lowerMessage.includes('grow')) {
-      return responses.crop[Math.floor(Math.random() * responses.crop.length)];
-    } else if (lowerMessage.includes('pest') || lowerMessage.includes('insect') || lowerMessage.includes('bug')) {
-      return responses.pest[Math.floor(Math.random() * responses.pest.length)];
-    } else if (lowerMessage.includes('fertilizer') || lowerMessage.includes('nutrient') || lowerMessage.includes('npk')) {
-      return responses.fertilizer[Math.floor(Math.random() * responses.fertilizer.length)];
-    } else if (lowerMessage.includes('weather') || lowerMessage.includes('rain') || lowerMessage.includes('temperature')) {
-      return responses.weather[Math.floor(Math.random() * responses.weather.length)];
-    } else {
-      return responses.default[Math.floor(Math.random() * responses.default.length)];
+      return data.response || "I apologize, I couldn't generate a response.";
+    } catch (error) {
+      console.error('Error in getAIResponse:', error);
+      return "I'm experiencing technical difficulties. Please try again.";
     }
   };
 

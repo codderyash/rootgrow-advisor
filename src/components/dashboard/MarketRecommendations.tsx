@@ -13,6 +13,7 @@ import {
   Clock,
   Star
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MarketData {
   market: string;
@@ -93,7 +94,8 @@ export default function MarketRecommendations() {
     await new Promise(resolve => setTimeout(resolve, 1200));
     
     setMarketData(generateMarketData());
-    setCropPrices(generateCropPrices());
+    const aiCropPrices = await generateCropPrices();
+    setCropPrices(aiCropPrices);
     setLastUpdate(new Date());
     setIsLoading(false);
   };

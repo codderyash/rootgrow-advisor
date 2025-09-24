@@ -14,6 +14,7 @@ import {
   Cloud,
   CloudDrizzle
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SensorData {
   N: number;
@@ -50,14 +51,23 @@ export default function SensorDashboard() {
     };
   };
 
-  // Mock crop recommendation based on sensor data
-  const getCropRecommendation = (data: SensorData): string => {
-    const crops = ["Rice", "Wheat", "Maize", "Cotton", "Sugarcane", "Soybean", "Tomato", "Potato"];
-    // Simple logic for demo - in real app this would be ML model
-    if (data.temperature > 25 && data.humidity > 70) return "Rice";
-    if (data.temperature < 20 && data.rainfall < 100) return "Wheat";
-    if (data.N > 80 && data.P > 60) return "Maize";
-    return crops[Math.floor(Math.random() * crops.length)];
+  // AI crop recommendation using Gemini API
+  const getCropRecommendation = async (data: SensorData): Promise<string> => {
+    try {
+      const { data: prediction, error } = await supabase.functions.invoke('crop-prediction', {
+        body: { sensorData: data }
+      });
+
+      if (error) {
+        console.error('Error calling crop prediction function:', error);
+        return "Rice"; // Fallback recommendation
+      }
+
+      return prediction.crop || "Rice";
+    } catch (error) {
+      console.error('Error in getCropRecommendation:', error);
+      return "Rice"; // Fallback recommendation
+    }
   };
 
   // Mock weather forecast
@@ -73,10 +83,14 @@ export default function SensorDashboard() {
   };
 
   useEffect(() => {
-    const updateData = () => {
+    const updateData = async () => {
       const newSensorData = simulateSensorData();
       setSensorData(newSensorData);
-      setRecommendedCrop(getCropRecommendation(newSensorData));
+      
+      // Get AI crop recommendation
+      const recommendation = await getCropRecommendation(newSensorData);
+      setRecommendedCrop(recommendation);
+      
       setWeatherForecast(generateWeatherForecast());
       setLastUpdate(new Date());
     };
