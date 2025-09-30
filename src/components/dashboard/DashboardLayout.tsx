@@ -9,16 +9,25 @@ import {
   LogOut,
   Menu,
   X,
-  RefreshCw
+  RefreshCw,
+  Scan,
+  Shield,
+  Users,
+  Languages
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import smartRootsLogo from "@/assets/smartroots-logo.jpg";
 import SensorDashboard from "./SensorDashboard";
 import ChatInterface from "./ChatInterface";
 import YieldPrediction from "./YieldPrediction";
 import MarketRecommendations from "./MarketRecommendations";
+import DiseaseDetector from "./DiseaseDetector";
+import CropInsurance from "./CropInsurance";
+import CommunityChat from "./CommunityChat";
+import { useLanguage, languages } from "@/contexts/LanguageContext";
 
 interface DashboardLayoutProps {
-  user: { name: string; email: string };
+  user: { name: string; email: string; landSize?: string; landUnit?: string; language?: string };
   onLogout: () => void;
 }
 
@@ -26,12 +35,16 @@ export default function DashboardLayout({ user, onLogout }: DashboardLayoutProps
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { currentLanguage, setLanguage, t } = useLanguage();
 
   const navigation = [
-    { id: "dashboard", name: "Dashboard", icon: LayoutDashboard },
-    { id: "chat", name: "AgriBot Chat", icon: MessageSquare },
-    { id: "yield", name: "Yield Prediction", icon: TrendingUp },
-    { id: "market", name: "Market Intel", icon: MapPin },
+    { id: "dashboard", name: t("dashboard"), icon: LayoutDashboard },
+    { id: "chat", name: t("agribot_chat"), icon: MessageSquare },
+    { id: "yield", name: t("yield_prediction"), icon: TrendingUp },
+    { id: "market", name: t("market_intel"), icon: MapPin },
+    { id: "disease", name: t("disease_detector"), icon: Scan },
+    { id: "insurance", name: t("crop_insurance"), icon: Shield },
+    { id: "community", name: t("community_chat"), icon: Users },
   ];
 
   const handleRefresh = async () => {
@@ -51,6 +64,12 @@ export default function DashboardLayout({ user, onLogout }: DashboardLayoutProps
         return <YieldPrediction />;
       case "market":
         return <MarketRecommendations />;
+      case "disease":
+        return <DiseaseDetector />;
+      case "insurance":
+        return <CropInsurance />;
+      case "community":
+        return <CommunityChat />;
       default:
         return <SensorDashboard />;
     }
@@ -121,15 +140,36 @@ export default function DashboardLayout({ user, onLogout }: DashboardLayoutProps
 
           {/* User Profile & Actions */}
           <div className="p-4 border-t border-sidebar-border space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 border-sidebar-border"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? "Refreshing..." : "Refresh Data"}
-            </Button>
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <label className="text-xs text-sidebar-foreground/60">Language</label>
+                <Select value={currentLanguage} onValueChange={setLanguage}>
+                  <SelectTrigger className="h-8 text-xs border-sidebar-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        <div className="flex items-center gap-2">
+                          <Languages className="h-3 w-3" />
+                          {lang.native}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 border-sidebar-border"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? t("loading") : t("refresh_data")}
+              </Button>
+            </div>
             
             <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent/50">
               <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-sidebar-primary-foreground font-medium text-sm">

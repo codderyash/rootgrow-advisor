@@ -4,14 +4,18 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LoginPage from "./components/auth/LoginPage";
-import SignupPage from "./components/auth/SignupPage";
+import SignupPageEnhanced from "./components/auth/SignupPageEnhanced";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 const queryClient = new QueryClient();
 
 interface User {
   name: string;
   email: string;
+  landSize?: string;
+  landUnit?: string;
+  language?: string;
 }
 
 const App = () => {
@@ -26,11 +30,21 @@ const App = () => {
     });
   };
 
-  const handleSignup = (userData: { name: string; email: string; password: string }) => {
+  const handleSignup = (userData: { 
+    name: string; 
+    email: string; 
+    password: string; 
+    landSize: string;
+    landUnit: string;
+    language: string;
+  }) => {
     // Mock signup - in real app this would create account in backend
     setUser({
       name: userData.name,
-      email: userData.email
+      email: userData.email,
+      landSize: userData.landSize,
+      landUnit: userData.landUnit,
+      language: userData.language
     });
   };
 
@@ -40,30 +54,32 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="dark"> {/* Force dark theme */}
-          <Toaster />
-          <Sonner />
-          {!user ? (
-            authMode === "login" ? (
-              <LoginPage 
-                onLogin={handleLogin}
-                onSwitchToSignup={() => setAuthMode("signup")}
-              />
+      <LanguageProvider initialLanguage={user?.language || 'en'}>
+        <TooltipProvider>
+          <div className="dark"> {/* Force dark theme */}
+            <Toaster />
+            <Sonner />
+            {!user ? (
+              authMode === "login" ? (
+                <LoginPage 
+                  onLogin={handleLogin}
+                  onSwitchToSignup={() => setAuthMode("signup")}
+                />
+              ) : (
+                <SignupPageEnhanced 
+                  onSignup={handleSignup}
+                  onSwitchToLogin={() => setAuthMode("login")}
+                />
+              )
             ) : (
-              <SignupPage 
-                onSignup={handleSignup}
-                onSwitchToLogin={() => setAuthMode("login")}
+              <DashboardLayout 
+                user={user}
+                onLogout={handleLogout}
               />
-            )
-          ) : (
-            <DashboardLayout 
-              user={user}
-              onLogout={handleLogout}
-            />
-          )}
-        </div>
-      </TooltipProvider>
+            )}
+          </div>
+        </TooltipProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 };

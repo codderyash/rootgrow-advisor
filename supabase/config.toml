@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.market-recommendations]
 verify_jwt = false
+
+[functions.disease-detection]
+verify_jwt = false
+
+[functions.crop-insurance]
+verify_jwt = false
