@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Eye, EyeOff, Sprout, User, Mail, Lock, MapPin, Languages } from "lucide-react";
-import smartRootsLogo from "@/assets/smartroots-logo.jpg";
+import smartRootsLogo from "@/assets/smartroots-logo.png";
 
 interface SignupPageProps {
   onSignup: (userData: { 

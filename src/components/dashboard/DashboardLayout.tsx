@@ -16,7 +16,7 @@ import {
   Languages
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import smartRootsLogo from "@/assets/smartroots-logo.jpg";
+import smartRootsLogo from "@/assets/smartroots-logo.png";
 import SensorDashboard from "./SensorDashboard";
 import ChatInterface from "./ChatInterface";
 import YieldPrediction from "./YieldPrediction";
@@ -67,7 +67,7 @@ export default function DashboardLayout({ user, onLogout }: DashboardLayoutProps
       case "disease":
         return <DiseaseDetector />;
       case "insurance":
-        return <CropInsurance />;
+        return <CropInsurance user={user} />;
       case "community":
         return <CommunityChat />;
       default:

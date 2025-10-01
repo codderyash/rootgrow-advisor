@@ -18,10 +18,14 @@ interface InsuranceQuote {
   documents: string[];
 }
 
-export default function CropInsurance() {
+interface CropInsuranceProps {
+  user?: { name: string; email: string; landSize?: string; landUnit?: string; language?: string };
+}
+
+export default function CropInsurance({ user }: CropInsuranceProps) {
   const [formData, setFormData] = useState({
     cropType: "",
-    area: "",
+    area: user?.landSize || "",
     location: "",
     soilType: "",
     irrigationType: "",
@@ -111,7 +115,7 @@ export default function CropInsurance() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="area">Area (acres) *</Label>
+                <Label htmlFor="area">Area ({user?.landUnit || 'acres'}) *</Label>
                 <Input
                   id="area"
                   type="number"

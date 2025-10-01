@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Sprout } from "lucide-react";
-import smartRootsLogo from "@/assets/smartroots-logo.jpg";
+import smartRootsLogo from "@/assets/smartroots-logo.png";
 
 interface LoginPageProps {
   onLogin: (credentials: { email: string; password: string }) => void;

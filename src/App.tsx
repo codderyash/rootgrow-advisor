@@ -10,12 +10,13 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 
 const queryClient = new QueryClient();
 
-interface User {
+export interface User {
   name: string;
   email: string;
   landSize?: string;
   landUnit?: string;
   language?: string;
+  cropType?: string;
 }
 
 const App = () => {
@@ -56,10 +57,9 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider initialLanguage={user?.language || 'en'}>
         <TooltipProvider>
-          <div className="dark"> {/* Force dark theme */}
-            <Toaster />
-            <Sonner />
-            {!user ? (
+          <Toaster />
+          <Sonner />
+          {!user ? (
               authMode === "login" ? (
                 <LoginPage 
                   onLogin={handleLogin}
@@ -75,9 +75,8 @@ const App = () => {
               <DashboardLayout 
                 user={user}
                 onLogout={handleLogout}
-              />
-            )}
-          </div>
+            />
+          )}
         </TooltipProvider>
       </LanguageProvider>
     </QueryClientProvider>
