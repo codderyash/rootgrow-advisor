@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Bot, User, Loader2, Sprout } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import smartRootsLogo from "@/assets/smartroots-logo.jpg";
+import smartRootsLogo from "@/assets/smartroots-logo.png";
 
 interface Message {
   id: string;
@@ -37,11 +37,32 @@ export default function ChatInterface() {
     }
   }, [messages]);
 
+  // Helper to simulate sensor data (same ranges as SensorDashboard)
+  const simulateSensorData = () => ({
+    N: Math.round(Math.random() * 140),
+    P: Math.round(Math.random() * 145 + 5),
+    K: Math.round(Math.random() * 205 + 5),
+    temperature: Math.round((Math.random() * 30 + 10) * 10) / 10,
+    humidity: Math.round(Math.random() * 68 + 30),
+    ph: Math.round((Math.random() * 5 + 4) * 10) / 10,
+    rainfall: Math.round(Math.random() * 280 + 20)
+  });
+
   // AI response using Gemini API via Supabase Edge Function
   const getAIResponse = async (userMessage: string): Promise<string> => {
     try {
+      // 1) Get latest sensor data (simulated for now)
+      const sensorData = simulateSensorData();
+
+      // 2) Ask AI for recommended crop from sensor data
+      const { data: prediction, error: predError } = await supabase.functions.invoke('crop-prediction', {
+        body: { sensorData }
+      });
+      const recommendedCrop = predError ? undefined : (prediction?.crop as string | undefined);
+
+      // 3) Ask AgriBot with full context
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message: userMessage }
+        body: { message: userMessage, sensorData, recommendedCrop }
       });
 
       if (error) {

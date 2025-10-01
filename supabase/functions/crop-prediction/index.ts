@@ -35,6 +35,7 @@ serve(async (req) => {
     }
 
     console.log('Processing crop prediction request:', sensorData);
+    const ph = (sensorData as any).pH ?? (sensorData as any).ph;
 
     const prompt = `Based on the following soil and environmental data, recommend the best crop to plant and provide detailed analysis:
 
@@ -42,7 +43,7 @@ Soil nutrients:
 - Nitrogen (N): ${sensorData.N} mg/kg
 - Phosphorus (P): ${sensorData.P} mg/kg  
 - Potassium (K): ${sensorData.K} mg/kg
-- pH: ${sensorData.pH}
+- pH: ${ph}
 
 Environmental conditions:
 - Temperature: ${sensorData.temperature}°C

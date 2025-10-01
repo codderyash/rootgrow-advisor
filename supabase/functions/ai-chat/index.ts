@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json();
+    const { message, sensorData, recommendedCrop } = await req.json();
     
     if (!message) {
       throw new Error('Message is required');
@@ -26,6 +26,8 @@ serve(async (req) => {
 
     console.log('Processing AI chat request:', message);
 
+    const contextText = sensorData || recommendedCrop ? `\n\nContext:\n${sensorData ? `Sensor Data -> N:${sensorData.N}, P:${sensorData.P}, K:${sensorData.K}, pH:${sensorData.pH ?? sensorData.ph}, Temp:${sensorData.temperature}°C, Humidity:${sensorData.humidity}%, Rainfall:${sensorData.rainfall}mm` : ''}${sensorData && recommendedCrop ? '\n' : ''}${recommendedCrop ? `Recommended Crop -> ${recommendedCrop}` : ''}\n\nUse this context to tailor the answer. If the user asks about crops, prioritize the recommended crop and explain why.` : '' ;
+
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
@@ -34,7 +36,7 @@ serve(async (req) => {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `You are AgriBot, an AI agricultural assistant. You help farmers with crop management, pest control, fertilizers, weather insights, and farming best practices. 
+            text: `You are AgriBot, an AI agricultural assistant. You help farmers with crop management, pest control, fertilizers, weather insights, and farming best practices.${contextText}
 
 User question: ${message}
 
