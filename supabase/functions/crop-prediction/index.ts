@@ -82,12 +82,16 @@ Respond in JSON format with fields: crop, confidence, reasoning, careInstruction
     }
 
     const data = await response.json();
-    const aiResponse = data.candidates[0]?.content?.parts[0]?.text || '';
+    let aiResponse = data.candidates[0]?.content?.parts[0]?.text || '';
+
+    // Clean up markdown formatting if present
+    aiResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     // Try to parse JSON response, fallback to structured data if parsing fails
     let prediction;
     try {
       prediction = JSON.parse(aiResponse);
+      console.log('Successfully parsed AI response:', prediction);
     } catch (parseError) {
       console.log('Could not parse JSON response, creating fallback prediction');
       prediction = {

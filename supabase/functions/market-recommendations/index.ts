@@ -57,12 +57,16 @@ Respond in JSON format as an array of 3 objects, each with fields: crop, price, 
     }
 
     const data = await response.json();
-    const aiResponse = data.candidates[0]?.content?.parts[0]?.text || '';
+    let aiResponse = data.candidates[0]?.content?.parts[0]?.text || '';
+
+    // Clean up markdown formatting if present
+    aiResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     // Try to parse JSON response, fallback to default recommendations if parsing fails
     let recommendations;
     try {
       recommendations = JSON.parse(aiResponse);
+      console.log('Successfully parsed AI response:', recommendations);
     } catch (parseError) {
       console.log('Could not parse JSON response, creating fallback recommendations');
       recommendations = [

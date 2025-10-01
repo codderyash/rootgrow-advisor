@@ -59,7 +59,7 @@ Provide helpful, practical advice in a friendly and professional manner. Keep re
     const data = await response.json();
     const aiResponse = data.candidates[0]?.content?.parts[0]?.text || 'I apologize, I could not generate a response at this time.';
 
-    console.log('AI response generated successfully');
+    console.log('AI chat response generated successfully:', aiResponse.substring(0, 100) + '...');
 
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

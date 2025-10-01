@@ -85,12 +85,16 @@ If no disease is detected, indicate "Healthy Plant" as the disease name.`;
     }
 
     const data = await response.json();
-    const aiResponse = data.candidates[0]?.content?.parts[0]?.text || '';
+    let aiResponse = data.candidates[0]?.content?.parts[0]?.text || '';
+
+    // Clean up markdown formatting if present
+    aiResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     // Try to parse JSON response, fallback to structured data if parsing fails
     let detection: DiseaseDetection;
     try {
       detection = JSON.parse(aiResponse);
+      console.log('Successfully parsed AI response:', detection);
     } catch (parseError) {
       console.log('Could not parse JSON response, creating fallback detection');
       detection = {

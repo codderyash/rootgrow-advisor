@@ -82,12 +82,16 @@ Respond in JSON format with fields: premium, coverage, roi, eligibility, recomme
     }
 
     const data = await response.json();
-    const aiResponse = data.candidates[0]?.content?.parts[0]?.text || '';
+    let aiResponse = data.candidates[0]?.content?.parts[0]?.text || '';
+
+    // Clean up markdown formatting if present
+    aiResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     // Try to parse JSON response, fallback to structured data if parsing fails
     let quote: InsuranceQuote;
     try {
       quote = JSON.parse(aiResponse);
+      console.log('Successfully parsed AI response:', quote);
     } catch (parseError) {
       console.log('Could not parse JSON response, creating fallback quote');
       const area = parseFloat(farmData.area) || 1;
