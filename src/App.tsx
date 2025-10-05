@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,73 +7,123 @@ import LoginPage from "./components/auth/LoginPage";
 import SignupPageEnhanced from "./components/auth/SignupPageEnhanced";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from '@supabase/supabase-js';
 
 const queryClient = new QueryClient();
 
-export interface User {
+export interface UserProfile {
   name: string;
   email: string;
-  landSize?: string;
-  landUnit?: string;
-  language?: string;
-  cropType?: string;
+  farm_size?: number;
+  land_unit?: string;
+  location?: string;
+  preferred_crops?: string[];
 }
 
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleLogin = (credentials: { email: string; password: string }) => {
-    // Mock login - in real app this would authenticate with backend
-    setUser({
-      name: credentials.email.split('@')[0],
-      email: credentials.email
+  // Set up auth state listener and check for existing session
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Fetch profile when user logs in
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
+      setIsLoading(false);
     });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch user profile from database
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
   };
 
-  const handleSignup = (userData: { 
-    name: string; 
-    email: string; 
-    password: string; 
-    landSize: string;
-    landUnit: string;
-    language: string;
-  }) => {
-    // Mock signup - in real app this would create account in backend
-    setUser({
-      name: userData.name,
-      email: userData.email,
-      landSize: userData.landSize,
-      landUnit: userData.landUnit,
-      language: userData.language
-    });
-  };
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setSession(null);
+    setProfile(null);
+    setAuthMode("login");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider initialLanguage={user?.language || 'en'}>
+      <LanguageProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          {!user ? (
+          {!user || !profile ? (
               authMode === "login" ? (
                 <LoginPage 
-                  onLogin={handleLogin}
                   onSwitchToSignup={() => setAuthMode("signup")}
                 />
               ) : (
                 <SignupPageEnhanced 
-                  onSignup={handleSignup}
                   onSwitchToLogin={() => setAuthMode("login")}
                 />
               )
             ) : (
               <DashboardLayout 
-                user={user}
+                user={{
+                  name: profile.name,
+                  email: profile.email,
+                  landSize: profile.farm_size?.toString(),
+                  landUnit: profile.land_unit
+                }}
                 onLogout={handleLogout}
             />
           )}

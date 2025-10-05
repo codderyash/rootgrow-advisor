@@ -5,13 +5,21 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Sprout } from "lucide-react";
 import smartRootsLogo from "@/assets/smartroots-logo.png";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+  password: z.string().min(1, "Password is required")
+});
 
 interface LoginPageProps {
-  onLogin: (credentials: { email: string; password: string }) => void;
   onSwitchToSignup: () => void;
 }
 
-export default function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
+export default function LoginPage({ onSwitchToSignup }: LoginPageProps) {
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -20,12 +28,62 @@ export default function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    onLogin({ email, password });
-    setIsLoading(false);
+
+    try {
+      // Validate input
+      const validatedData = loginSchema.parse({ email, password });
+
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: validatedData.email,
+        password: validatedData.password
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Error",
+            description: "Invalid email or password. Please try again.",
+            variant: "destructive"
+          });
+        } else if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "Error",
+            description: "Please verify your email before signing in.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Signed in successfully!",
+      });
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

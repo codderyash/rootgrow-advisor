@@ -7,16 +7,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Eye, EyeOff, Sprout, User, Mail, Lock, MapPin, Languages } from "lucide-react";
 import smartRootsLogo from "@/assets/smartroots-logo.png";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().trim().email("Invalid email address").max(255),
+  password: z.string().min(6, "Password must be at least 6 characters").max(72),
+  confirmPassword: z.string(),
+  landSize: z.string().min(1, "Land size is required"),
+  landUnit: z.enum(['acres', 'hectares', 'bigha', 'katha']),
+  language: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
 
 interface SignupPageProps {
-  onSignup: (userData: { 
-    name: string; 
-    email: string; 
-    password: string; 
-    landSize: string;
-    landUnit: string;
-    language: string;
-  }) => void;
   onSwitchToLogin: () => void;
 }
 
@@ -33,7 +41,8 @@ const languages = [
   { code: 'pa', name: 'Punjabi', native: 'ਪੰਜਾਬੀ' }
 ];
 
-export default function SignupPageEnhanced({ onSignup, onSwitchToLogin }: SignupPageProps) {
+export default function SignupPageEnhanced({ onSwitchToLogin }: SignupPageProps) {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -51,35 +60,78 @@ export default function SignupPageEnhanced({ onSignup, onSwitchToLogin }: Signup
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
-      return;
-    }
-    
     if (!agreedToTerms) {
-      alert("Please agree to the terms and conditions");
-      return;
-    }
-
-    if (!formData.landSize || parseFloat(formData.landSize) <= 0) {
-      alert("Please enter a valid land size");
+      toast({
+        title: "Error",
+        description: "Please agree to the terms and conditions",
+        variant: "destructive"
+      });
       return;
     }
 
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    onSignup({ 
-      name: formData.name, 
-      email: formData.email, 
-      password: formData.password,
-      landSize: formData.landSize,
-      landUnit: formData.landUnit,
-      language: formData.language
-    });
-    setIsLoading(false);
+
+    try {
+      // Validate input
+      const validatedData = signupSchema.parse(formData);
+
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: validatedData.email,
+        password: validatedData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            name: validatedData.name,
+            farm_size: parseFloat(validatedData.landSize),
+            land_unit: validatedData.landUnit,
+            language: validatedData.language
+          }
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast({
+            title: "Error",
+            description: "This email is already registered. Please sign in instead.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Account created successfully! Please check your email to verify your account.",
+      });
+
+      // Switch to login after successful signup
+      setTimeout(() => onSwitchToLogin(), 2000);
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
