@@ -74,6 +74,20 @@ export const translations: Record<string, Record<string, string>> = {
     'dont_have_account': "Don't have an account?",
     'sign_in_here': 'Sign in here',
     'sign_up_here': 'Sign up here',
+    
+    // AgriBot
+    'agribot_welcome': "Hello! I'm AgriBot, your AI agricultural assistant. I can help you with crop recommendations, farming techniques, pest management, and answer any questions about your farm. What would you like to know?",
+    'ai_assistant': 'Your AI agricultural assistant',
+    'ai_online': 'AI Assistant Online',
+    'quick_questions': 'Quick Questions',
+    'click_question': 'Click on any question to get started',
+    'conversation': 'Conversation',
+    'bot_thinking': 'AgriBot is thinking...',
+    'chat_placeholder': 'Ask AgriBot about farming, crops, or agricultural practices...',
+    'quick_q1': 'What crop should I plant this season?',
+    'quick_q2': 'How to manage pest problems?',
+    'quick_q3': 'What fertilizer should I use?',
+    'quick_q4': 'When should I irrigate my crops?',
   },
   
   hi: {
@@ -129,6 +143,20 @@ export const translations: Record<string, Record<string, string>> = {
     'dont_have_account': 'कोई खाता नहीं है?',
     'sign_in_here': 'यहाँ साइन इन करें',
     'sign_up_here': 'यहाँ साइन अप करें',
+    
+    // AgriBot
+    'agribot_welcome': 'नमस्ते! मैं एग्रीबॉट हूं, आपका AI कृषि सहायक। मैं फसल की सिफारिशों, खेती की तकनीकों, कीट प्रबंधन और आपके खेत के बारे में किसी भी प्रश्न में आपकी मदद कर सकता हूं। आप क्या जानना चाहेंगे?',
+    'ai_assistant': 'आपका AI कृषि सहायक',
+    'ai_online': 'AI सहायक ऑनलाइन',
+    'quick_questions': 'त्वरित प्रश्न',
+    'click_question': 'शुरू करने के लिए किसी भी प्रश्न पर क्लिक करें',
+    'conversation': 'बातचीत',
+    'bot_thinking': 'एग्रीबॉट सोच रहा है...',
+    'chat_placeholder': 'खेती, फसलों या कृषि प्रथाओं के बारे में एग्रीबॉट से पूछें...',
+    'quick_q1': 'इस मौसम में मुझे कौन सी फसल लगानी चाहिए?',
+    'quick_q2': 'कीट समस्याओं का प्रबंधन कैसे करें?',
+    'quick_q3': 'मुझे कौन सा उर्वरक उपयोग करना चाहिए?',
+    'quick_q4': 'मुझे अपनी फसलों की सिंचाई कब करनी चाहिए?',
   }
   
   // Add more languages as needed

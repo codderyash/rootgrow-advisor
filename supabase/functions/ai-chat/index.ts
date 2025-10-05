@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, sensorData, recommendedCrop } = await req.json();
+    const { message, sensorData, recommendedCrop, language = 'en' } = await req.json();
     
     if (!message) {
       throw new Error('Message is required');
@@ -26,6 +26,20 @@ serve(async (req) => {
 
     console.log('Processing AI chat request:', message);
 
+    const languageNames: Record<string, string> = {
+      'en': 'English',
+      'hi': 'Hindi',
+      'bn': 'Bengali', 
+      'te': 'Telugu',
+      'mr': 'Marathi',
+      'ta': 'Tamil',
+      'gu': 'Gujarati',
+      'kn': 'Kannada',
+      'or': 'Odia',
+      'pa': 'Punjabi'
+    };
+    
+    const languageInstruction = language !== 'en' ? `\n\nIMPORTANT: You MUST respond in ${languageNames[language] || language} language. The entire response should be in ${languageNames[language] || language}, not English.` : '';
     const contextText = sensorData || recommendedCrop ? `\n\nContext:\n${sensorData ? `Sensor Data -> N:${sensorData.N}, P:${sensorData.P}, K:${sensorData.K}, pH:${sensorData.pH ?? sensorData.ph}, Temp:${sensorData.temperature}°C, Humidity:${sensorData.humidity}%, Rainfall:${sensorData.rainfall}mm` : ''}${sensorData && recommendedCrop ? '\n' : ''}${recommendedCrop ? `Recommended Crop -> ${recommendedCrop}` : ''}\n\nUse this context to tailor the answer. If the user asks about crops, prioritize the recommended crop and explain why.` : '' ;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {

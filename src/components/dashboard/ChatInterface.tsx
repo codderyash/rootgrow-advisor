@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Bot, User, Loader2, Sprout } from "lucide-react";
+import { Send, Bot, User, Loader2, Sprout, Mic, MicOff, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import smartRootsLogo from "@/assets/smartroots-logo.png";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Message {
   id: string;
@@ -17,18 +18,58 @@ interface Message {
 }
 
 export default function ChatInterface() {
+  const { t, currentLanguage } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Hello! I'm AgriBot, your AI agricultural assistant. I can help you with crop recommendations, farming techniques, pest management, and answer any questions about your farm. What would you like to know?",
+      content: t('agribot_welcome') || "Hello! I'm AgriBot, your AI agricultural assistant. I can help you with crop recommendations, farming techniques, pest management, and answer any questions about your farm. What would you like to know?",
       sender: "bot",
       timestamp: new Date()
     }
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = getLanguageCode(currentLanguage);
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputMessage(transcript);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+        toast({
+          title: t('error') || "Error",
+          description: "Voice recognition failed. Please try again.",
+          variant: "destructive"
+        });
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [currentLanguage, toast, t]);
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -36,6 +77,61 @@ export default function ChatInterface() {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Get language code for speech recognition
+  const getLanguageCode = (lang: string) => {
+    const langMap: Record<string, string> = {
+      'en': 'en-US',
+      'hi': 'hi-IN',
+      'bn': 'bn-IN',
+      'te': 'te-IN',
+      'mr': 'mr-IN',
+      'ta': 'ta-IN',
+      'gu': 'gu-IN',
+      'kn': 'kn-IN',
+      'or': 'or-IN',
+      'pa': 'pa-IN'
+    };
+    return langMap[lang] || 'en-US';
+  };
+
+  // Text to speech function
+  const speak = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = getLanguageCode(currentLanguage);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // Toggle voice input
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      toast({
+        title: t('error') || "Error",
+        description: "Voice recognition is not supported in your browser.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.lang = getLanguageCode(currentLanguage);
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   // Helper to simulate sensor data (same ranges as SensorDashboard)
   const simulateSensorData = () => ({
@@ -62,7 +158,7 @@ export default function ChatInterface() {
 
       // 3) Ask AgriBot with full context
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message: userMessage, sensorData, recommendedCrop }
+        body: { message: userMessage, sensorData, recommendedCrop, language: currentLanguage }
       });
 
       if (error) {
@@ -102,10 +198,13 @@ export default function ChatInterface() {
       };
 
       setMessages(prev => [...prev, botMessage]);
+      
+      // Speak the response
+      speak(aiResponse);
     } catch (error) {
       console.error("Error getting AI response:", error);
       toast({
-        title: "Connection Error",
+        title: t('error') || "Connection Error",
         description: "Unable to connect to AgriBot. Please try again.",
         variant: "destructive"
       });
@@ -122,10 +221,10 @@ export default function ChatInterface() {
   };
 
   const quickQuestions = [
-    "What crop should I plant this season?",
-    "How to manage pest problems?",
-    "What fertilizer should I use?",
-    "When should I irrigate my crops?"
+    t('quick_q1') || "What crop should I plant this season?",
+    t('quick_q2') || "How to manage pest problems?",
+    t('quick_q3') || "What fertilizer should I use?",
+    t('quick_q4') || "When should I irrigate my crops?"
   ];
 
   const handleQuickQuestion = (question: string) => {
@@ -144,22 +243,22 @@ export default function ChatInterface() {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-3xl font-bold">AgriBot Chat</h1>
-            <p className="text-muted-foreground">Your AI agricultural assistant</p>
+            <h1 className="text-3xl font-bold">{t('agribot_chat') || 'AgriBot Chat'}</h1>
+            <p className="text-muted-foreground">{t('ai_assistant') || 'Your AI agricultural assistant'}</p>
           </div>
         </div>
         <div className="flex-1"></div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-          AI Assistant Online
+          {t('ai_online') || 'AI Assistant Online'}
         </div>
       </div>
 
       {/* Quick Questions */}
       <Card className="card-premium">
         <CardHeader>
-          <CardTitle className="text-lg">Quick Questions</CardTitle>
-          <CardDescription>Click on any question to get started</CardDescription>
+          <CardTitle className="text-lg">{t('quick_questions') || 'Quick Questions'}</CardTitle>
+          <CardDescription>{t('click_question') || 'Click on any question to get started'}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -181,7 +280,7 @@ export default function ChatInterface() {
       {/* Chat Messages */}
       <Card className="card-glow min-h-[500px] flex flex-col">
         <CardHeader className="border-b border-border/50">
-          <CardTitle>Conversation</CardTitle>
+          <CardTitle>{t('conversation') || 'Conversation'}</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 p-0">
           <ScrollArea className="h-[400px] p-4" ref={scrollAreaRef}>
@@ -238,9 +337,9 @@ export default function ChatInterface() {
                       <Bot className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
+                   <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">AgriBot is thinking...</span>
+                    <span className="text-sm text-muted-foreground">{t('bot_thinking') || 'AgriBot is thinking...'}</span>
                   </div>
                 </div>
               )}
@@ -251,14 +350,28 @@ export default function ChatInterface() {
         {/* Message Input */}
         <div className="p-4 border-t border-border/50">
           <div className="flex gap-2">
+            <Button
+              onClick={toggleListening}
+              disabled={isLoading}
+              variant={isListening ? "default" : "outline"}
+              size="icon"
+              className={isListening ? "bg-destructive hover:bg-destructive/90" : ""}
+            >
+              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
             <Input
-              placeholder="Ask AgriBot about farming, crops, or agricultural practices..."
+              placeholder={t('chat_placeholder') || "Ask AgriBot about farming, crops, or agricultural practices..."}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              disabled={isLoading}
+              disabled={isLoading || isListening}
               className="flex-1 bg-input border-border/50 focus:border-primary/50"
             />
+            {isSpeaking && (
+              <Button variant="outline" size="icon" disabled>
+                <Volume2 className="h-4 w-4 animate-pulse" />
+              </Button>
+            )}
             <Button
               onClick={handleSendMessage}
               disabled={isLoading || !inputMessage.trim()}
